@@ -17,21 +17,12 @@ def notch [d: number] {
   }
 }
 
- # ------------------------------
- # -90 - 190 = -280 
- #  10 & 190 = 10 --> 0 --> -100 --> -180
- # ------------------------------
- # -90 + 190 = 100
- #  10 + 190 = 10 --> 100 --> 200
- # ------------------------------
- # 90 + 190 = 280
- # 90 + 190 = 90 --> 100 --> 200 --> 280
- # ------------------------------
- # 90 - 190 = -100
- # 90 - 190 = 90 --> 0 --> -100
-def zero-passes [number: int, step: int] {
+def zero-passes [number: int, step: int, sign: int] {
   let current_notch = notch ($number)
-  (($current_notch + $step) / $notches) | into int
+
+  let count_start = (if $sign < 0 { $notches - $current_notch } else { $current_notch }) mod $notches
+
+  (($count_start + $step) / $notches) | into int
 }
 
 for row in $steps {
@@ -39,10 +30,9 @@ for row in $steps {
   let sign = if ($row.r == "L") { -1 } else { 1 }
   if $sign < 0 { $lefts += 1 } else { $rights += 1 }
 
-  $past_zero += zero-passes $dial $step
+  $past_zero += zero-passes $dial $step $sign
 
   $dial += $step * $sign
-  # print (notch ($dial))
 
   if ($dial mod $notches == 0) {
     $on_zero += 1
