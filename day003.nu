@@ -1,26 +1,52 @@
-mut a = 0
-mut b = 0
-mut c = 0
+def workable [string: string, left: int, right: int] {
+  let len = $string | str length
+  $string | str substring ($left + 1)..($len - ($right))
+}
 
-def best-batteries [line: string] {
-  mut a = 0
-  mut b = 0
-  for chr in ($line | split chars) {
-    let c = $chr | into int
-    if ($a * 10 + $b) < ($b * 10 + $c) {
-      $a = $b
-      $b = $c
-    } else if $b < $c {
-      $b = $c
+def find-left-most-max [workable: string] {
+  mut index = 0
+  mut max = 0
+  mut max_index = 0
+  for n in ($workable | split chars | into int | reverse) {
+    if $n >= $max {
+      $max = $n
+      $max_index = $index
     }
+    $index += 1
   }
-  $a * 10 + $b
+  {
+    value: $max,
+    index: (($workable | str length) - $max_index - 1)
+  }
+}
+
+def get-battery [size: int, string: string] {
+  mut battery = []
+  mut left = -1
+  for i in 0..($size - 1) {
+    let $w = workable $string $left ($size - $i)
+    let max = find-left-most-max $w
+    let max_index = $max.index
+    let max_value = $max.value
+
+    $left += $max_index + 1
+
+    $battery = $battery | append $max_value
+  }
+  $battery | into string | str join | into int
 }
 
 def part-1 [] {
-  open input/day003.txt | lines | each {|bank| (best-batteries $bank)} | math sum
+  let SIZE = 2
+  open input/day003.txt | lines | each {|line| (get-battery $SIZE $line)} | math sum 
+}
+
+def part-2 [] {
+  let SIZE = 12
+  open input/day003.txt | lines | each {|line| (get-battery $SIZE $line)} | math sum 
 }
 
 def main [] {
-  part-1
+  print (part-1)
+  print (part-2)
 }
