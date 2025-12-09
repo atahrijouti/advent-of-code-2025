@@ -1,10 +1,10 @@
 const sample = ".......^.......
-......^........
-.....^.........
-....^..........
-...^...........
-..^............
-.^............."
+......^.^......
+.....^.^.^.....
+....^.^...^....
+...^.^...^.^...
+..^...^.....^..
+.^.^.^.^.^...^."
 
 def find-beam [beam: record, stack: list] {
   $stack | where {|it|
@@ -13,8 +13,8 @@ def find-beam [beam: record, stack: list] {
 }
 
 def part-2 [] {
-  # let matrix = $sample | lines | each {|l| ($l | split chars) | enumerate } | enumerate
-  let matrix = open input/day007.txt | lines | each {|l| ($l | split chars) | enumerate } | enumerate
+  let matrix = $sample | lines | each {|l| ($l | split chars) | enumerate } | enumerate
+  # let matrix = open input/day007.txt | lines | each {|l| ($l | split chars) | enumerate } | enumerate
 
   let width = $matrix.0.item | length
   let height = $matrix | length
@@ -29,46 +29,60 @@ def part-2 [] {
     })
   }
 
-  mut splits = 0
-  mut stack = [{row: 0, col: (( $width / 2) | into int), splits: []}]
+  mut count = 0
+  mut stack = [{row: 0, col: (( $width / 2) | into int), start: {row: 0, col: (( $width / 2) | into int)}}]
+  mut splits = {}
   for line in 0..($height - 1) {
     mut line_stack = []
     for beam in $stack {
       let row = $beam.row
       let col = $beam.col
-      let beam_splits = $beam.splits
       let id = $"($row),($col)"
       let beam_on_prism = $prisms | get -o $id | default false
       if ($beam_on_prism) {
         let leftCol = if ($col == 0) { null } else { $col - 1 }
         let rightCol = if ($col == ($width - 1)) { null } else { $col + 1 }
-        let potentialLeft = { row: ($row + 1), col: $leftCol, splits: [{row: $row, col: $col}, ...$beam_splits]} 
-        let potentialRight = { row: ($row + 1), col: $rightCol, splits: [{row: $row, col: $col}, ...$beam_splits]}
+        let potential_left = {
+          row: ($row + 1),
+          col: $leftCol, start:
+          {row: ($row + 1), col: $leftCol}
+        } 
+        let potential_right = {
+          row: ($row + 1),
+          col: $rightCol,
+          start:{row: ($row + 1), col: $rightCol}
+        }
         mut split = false
-        let findsLeft = find-beam $potentialLeft $line_stack
-        let findsRight = find-beam $potentialRight $line_stack
-        if ($findsLeft | is-empty) {
-          $line_stack ++= [$potentialLeft]
+
+        let found_left = find-beam $potential_left $line_stack
+        if ($found_left | is-empty) {
+          $splits = $splits | insert $"($potential_left.row),($potential_left.col)" $"($beam.start.row),($beam.start.col)" 
+          $line_stack ++= [$potential_left]
           $split = true
         }
-        if ($findsRight | is-empty) {
-          $line_stack ++= [$potentialRight]
+        let found_right = find-beam $potential_right $line_stack
+        if ($found_right | is-empty) {
+          $splits = $splits | insert $"($potential_right.row),($potential_right.col)" $"($beam.start.row),($beam.start.col)" 
+          $line_stack ++= [$potential_right]
           $split = true
         }
         if $split {
-          $splits += 1
+          $count += 1
         }
       } else {
-        let potentialBeam = {row: ($row + 1), col: $col, splits: $beam_splits}
-        if $potentialBeam not-in $line_stack {
-          $line_stack ++= [{row: ($row + 1), col: $col, splits: $beam_splits}]
+        let potential_beam = {row: ($row + 1), col: $col, start: $beam.start}
+        let found_beam = find-beam $potential_beam $line_stack
+        if ($found_beam | is-empty) {
+          $line_stack ++= [$potential_beam]
         }
       }
     }
     $stack = $line_stack
   }
+  # $splits | save -f output/day007-part-2-sample-splits.nuon
   {
     stack: $stack,
+    split_count: $count,
     splits: $splits
   }
 }
